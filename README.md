@@ -1,7 +1,7 @@
 **Cat In Your Face**
 
 # Todo
-[ ] add height and width to opts
-[ ] add your own images
-[ ] custom image paths
+1. [ ] add height and width to opts
+2. [ ] add your own images
+3. [ ] custom image paths
 
