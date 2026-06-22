@@ -4,21 +4,35 @@ local term = nil
 local buf = nil
 local job = nil
 
-local width = 40
-local height = 12
+local default_opts = {
+  width = 40,
+  height = 12,
+  threshold = {
+    [0] = "lua/catinurface/images/no.jpg",
+    [1] = "lua/catinurface/images/small.jpg",
+    [5] = "lua/catinurface/images/medium.jpg",
+    [10] = "lua/catinurface/images/big.jpg",
+  }
+}
+
+local config = vim.deepcopy(default_opts)
+
+local function resolve_path(path)
+  path = vim.fn.expand(path)
+  if vim.startswith(path, "/") then
+    return path
+  end
+  return vim.api.nvim_get_runtime_file(path, false)[1]
+end
 
 local function getImage(errors)
-  local name = nil
-  if errors == 0 then
-    name = "noerror.jpg"
-  elseif errors < 5 then
-    name = "smallerror.jpg"
-  elseif errors < 10 then
-    name = "mediumerror.jpg"
-  else
-    name = "bigerror.jpg"
+  local best_threshold = -math.huge
+  for t, _ in pairs(config.threshold) do
+    if t <= errors and t > best_threshold then
+      best_threshold = t
+    end
   end
-  return vim.api.nvim_get_runtime_file("lua/catinurface/images/" .. name, false)[1]
+  return resolve_path(config.threshold[best_threshold])
 end
 
 local function getNumberOfErrors()
@@ -38,7 +52,7 @@ local function updateImage()
 
   local num_errors = getNumberOfErrors()
   local image_path = getImage(num_errors)
-  local cmd = string.format("chafa --size=%dx%d %s", width, height, vim.fn.expand(image_path))
+  local cmd = string.format("chafa --size=%dx%d %s", config.width, config.height, vim.fn.expand(image_path))
 
   vim.api.nvim_chan_send(term, "\x1b[2J\x1b[3J\x1b[H")
   vim.fn.jobstart(cmd, {
@@ -55,18 +69,17 @@ local function create_panel()
 
   local ui = vim.api.nvim_list_uis()[1]
 
-  local opts = {
+  vim.api.nvim_open_win(buf, false, {
     relative = 'editor',
-    width = width,
-    height = height,
-    row = ui.height - height - 2, -- Adjust for statusline
-    col = ui.width - width - 2,
+    width = config.width,
+    height = config.height,
+    row = ui.height - config.height - 2, -- Adjust for statusline
+    col = ui.width - config.width - 2,
     style = 'minimal',
     border = 'rounded',
     focusable = false,
     noautocmd = true
-  }
-  vim.api.nvim_open_win(buf, false, opts)
+  })
   vim.bo[buf].buftype = "nofile"
   vim.bo[buf].bufhidden = "wipe"
   vim.bo[buf].swapfile = false
@@ -84,8 +97,8 @@ end
 
 function M.setup(opts)
   opts = opts or {}
-  height = opts.height or 12
-  width = opts.width or 40
+
+  config = vim.tbl_deep_extend("force", vim.deepcopy(default_opts), opts)
 
   vim.api.nvim_create_autocmd("DiagnosticChanged", {
     callback = function()
