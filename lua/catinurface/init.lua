@@ -82,7 +82,11 @@ local function close_panel()
   buf = nil
 end
 
-M.setup = function()
+function M.setup(opts)
+  opts = opts or {}
+  height = opts.height or 12
+  width = opts.width or 40
+
   vim.api.nvim_create_autocmd("DiagnosticChanged", {
     callback = function()
       if buf ~= nil then
