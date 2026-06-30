@@ -5,8 +5,8 @@ local buf = nil
 local job = nil
 
 local default_opts = {
-  height = 12,
-  width = 40,
+  height = 10,
+  width = 20,
   threshold = {
     [0] = "lua/catinurface/images/no.jpg",
     [1] = "lua/catinurface/images/small.jpg",
